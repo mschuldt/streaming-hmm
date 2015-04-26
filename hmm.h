@@ -5,7 +5,12 @@
 #define true 1
 #define false 0
 
+//#define double float
+
 typedef struct model{
+  int started;
+  double prob;
+
   int numStates;
   int numObservations;
   double defaultProbability;
@@ -26,6 +31,14 @@ typedef struct gesture{
   int *o;
 } gesture;
 
+//for motion detect filter
+int in_motion = false;
+int motion_change_time = 190;
+int motion_start_time;
+//
+double* def_ref;
+double* def_ref_initial;
+
 model** models;
 
 model* new_model();
@@ -36,4 +49,5 @@ int deriveGroup(model *m, double *acc);
 void forwardProc_helper(model *m, int o);
 double* forwardProc(model *m, gesture *g);
 double getProbability(model *m, gesture *g);
+int filter_ok(double* acc);
 #endif

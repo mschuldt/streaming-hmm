@@ -7,9 +7,9 @@
 
 //Called with each accelerometer reading
 void input_reading(double *acc){
-  if (filter_ok(acc)){
+  if (filter(acc)){
     for (int i = 0; i < n_models; i++){
-      forwardProc_helper(models[i], deriveGroup(models[i], acc));
+      forward_proc_inc(models[i], derive_group(models[i], acc));
     }
   }
 }
@@ -39,12 +39,10 @@ int input_end(){
     sum += (m->defaultProbability)*prob;
   }
   //printf("sum = %.*e,\n", sum);
-
   for (int i=0; i < n_models; i++) {
     m = models[i];
     double tmpgesture = m->prob;
     double tmpmodel = m->defaultProbability;
-
     if (((tmpmodel * tmpgesture) / sum) > recogprob) {
       probgesture = tmpgesture;
       probmodel = tmpmodel;
@@ -52,10 +50,7 @@ int input_end(){
       recognized = i;
     }
   }
-
-  //reset for next time
-  def_ref = def_ref_initial;
-
+  dir_filter_ref = dir_filter_ref_initial; //reset for next time
   return recognized;
 }
 
@@ -66,7 +61,8 @@ int classify_gesture(gesture *g){
   return input_end();
 }
 
-int deriveGroup(model *m, double *acc){
+//The quantizer, maps accelerometer readings to a set integers.
+int derive_group(model *m, double *acc){
   double a, b, c, d;
   double minDist = 0x3ffff;
   int minGroup=0;
@@ -85,8 +81,8 @@ int deriveGroup(model *m, double *acc){
   return minGroup;
 }
 
-void forwardProc_helper(model *m, int o){
-  //  printf("%p ", m->s);
+//Performs the next iteration of the HMM forward algorithm
+void forward_proc_inc(model *m, int o){
   double *pi = m->PI;
   double **a = m->A;
   double **b = m->B;
@@ -101,35 +97,21 @@ void forwardProc_helper(model *m, int o){
     m->started = true;
   }else{
     double** tmp;
-    //printf("\nforwardProc_helper(%d)\n", o);
     for (int k = 0; k < numStates; k++){
       double sum = 0;
       for (int l = 0; l < numStates; l++){
         sum += s[l] * a[l][k];
-        //printf("[%f, %f], ", s[l], a[l][k]);
       }
       f[k] = sum * b[k][o];
-      //printf("%f, ", b[k][o]);
-      //printf("\nsum,f[k]=: %f, %f\n", sum, f[k]);
-      //printf("%f\n", sum, f[k]);
     }
-    //printf("\n");
     m->f = s;
     m->s = f;
   }
 }
 
-int _count = 0;
-model* new_model(){
-  model* m = models[_count++] = (model*)malloc(sizeof(model));
-  return m;
-}
-
-double* idle_state_filter(double* acc){
-
-}
-
-int filter_ok(double* acc){
+//apply various filters to accelerometer reading ACC
+// returning true if the ACC passes, else false
+int filter(double* acc){
   if (!acc){
     return false;
   }
@@ -144,31 +126,15 @@ int filter_ok(double* acc){
   }
 
   ////////////////////////////////////////////////////////////////////////////////
-  //motion detect filter
-  /*
-    if (in_motion  && (System.currentTimeMillis() - motion_start_time)
-    >= motion_change_time) {
-    in_motion=false;
-    this.device.fireMotionStopEvent();
-    }
-
-    motion_start_time=System.currentTimeMillis();
-    if (!in_motion) {
-    in_motion=true;
-    motion_start_time=System.currentTimeMillis();
-    this.device.fireMotionStartEvent();
-    }
-  */
-  ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
   double def_sensitivity = 0.4;
-  if (acc[0] < def_ref[0] - def_sensitivity ||
-      acc[0] > def_ref[0] + def_sensitivity ||
-      acc[1] < def_ref[1] - def_sensitivity ||
-      acc[1] > def_ref[1] + def_sensitivity ||
-      acc[2] < def_ref[2] - def_sensitivity ||
-      acc[2] > def_ref[2] + def_sensitivity) {
-    def_ref = acc;
+  if (acc[0] < dir_filter_ref[0] - def_sensitivity ||
+      acc[0] > dir_filter_ref[0] + def_sensitivity ||
+      acc[1] < dir_filter_ref[1] - def_sensitivity ||
+      acc[1] > dir_filter_ref[1] + def_sensitivity ||
+      acc[2] < dir_filter_ref[2] - def_sensitivity ||
+      acc[2] > dir_filter_ref[2] + def_sensitivity) {
+    dir_filter_ref = acc;
     return true;
   }
   return false;
@@ -178,10 +144,10 @@ int main(){
   init_models();
   init_gestures();
 
-  def_ref = def_ref_initial = (double*)malloc(sizeof(double)*3);
+  dir_filter_ref_initial = (double*)malloc(sizeof(double)*3);
+  dir_filter_ref = dir_filter_ref_initial;
 
   int n_states = models[0]->numStates;//assume they are all the same
-
   for (int i = 0; i < n_models; i++){
     models[i]->f = (double*)calloc(n_states, sizeof(double));
     models[i]->s = (double*)calloc(n_states, sizeof(double));

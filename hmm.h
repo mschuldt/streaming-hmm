@@ -31,23 +31,19 @@ typedef struct gesture{
   int *o;
 } gesture;
 
-//for motion detect filter
-int in_motion = false;
-int motion_change_time = 190;
-int motion_start_time;
-//
-double* def_ref;
-double* def_ref_initial;
-
 model** models;
 
-model* new_model();
+int _count = 0;
+model* new_model(){
+  model* m = models[_count++] = (model*)malloc(sizeof(model));
+  return m;
+}
+
+double* dir_filter_ref;
+double* dir_filter_ref_initial;
+
 int classify_gesture(gesture *g);
-double matches(model *m, gesture *g);
-int* getObservationSequence(model *m, gesture *g);
-int deriveGroup(model *m, double *acc);
-void forwardProc_helper(model *m, int o);
-double* forwardProc(model *m, gesture *g);
-double getProbability(model *m, gesture *g);
-int filter_ok(double* acc);
+int derive_group(model *m, double *acc);
+void forward_proc_inc(model *m, int o);
+int filter(double* acc);
 #endif

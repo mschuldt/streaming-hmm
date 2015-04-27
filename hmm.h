@@ -39,4 +39,8 @@ double* dir_filter_ref_initial;
 int derive_group(model *m, double *acc);
 void forward_proc_inc(model *m, int o);
 int filter(double* acc);
+
+//so that we can load the same models as the fixed point version
+inline double d2fp(double n){return n;}
+
 #endif

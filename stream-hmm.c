@@ -3,7 +3,7 @@
 #include <float.h>
 #include "hmm.h"
 #include "models.c"
-#include "gestures.c"
+#include <string.h>
 
 //Called with each accelerometer reading
 void input_reading(double *acc){
@@ -52,13 +52,6 @@ int input_end(){
   }
   dir_filter_ref = dir_filter_ref_initial; //reset for next time
   return recognized;
-}
-
-int classify_gesture(gesture *g){
-  for (int i = 0; i < g->len; i++){
-    input_reading(g->data[i]);
-  }
-  return input_end();
 }
 
 //The quantizer, maps accelerometer readings to a set integers.
@@ -140,21 +133,56 @@ int filter(double* acc){
   return false;
 }
 
+double *acc_reading;
+
+double* read_line(char* line){
+  char* tok;
+  tok = strtok(line, ",");//throw out time
+  acc_reading = (double*)malloc(sizeof(double)*3);//mem leak
+  for (int i = 0; i < 3; i++){
+    tok = strtok(NULL, ",\n");
+    acc_reading[i] = strtod(tok, NULL);
+  }
+  /*
+  for (int i = 0; i < 3; i++){
+    printf("%f ", acc_reading[i]);
+  }
+  printf("\n");
+  */
+  return acc_reading;
+}
+
+int classify_csv_file(const char* filename){
+  FILE* f = fopen(filename, "r");
+  char line[1024];
+  fgets(line, 1024, f);
+  while (fgets(line, 1024, f)){
+    input_reading(read_line(line));
+  }
+  fclose(f);
+  return input_end();
+}
+
+
 int main(){
   init_models();
-  init_gestures();
 
   dir_filter_ref_initial = (double*)malloc(sizeof(double)*3);
   dir_filter_ref = dir_filter_ref_initial;
 
   int n_states = models[0]->numStates;//assume they are all the same
+
+  acc_reading = (double*)malloc(sizeof(double)*3);
+
   for (int i = 0; i < n_models; i++){
     models[i]->f = (double*)calloc(n_states, sizeof(double));
     models[i]->s = (double*)calloc(n_states, sizeof(double));
     models[i]->started = false;
   }
 
-  for (int i = 0; i < n_gestures; i++){
-    printf("%d\n", classify_gesture(gestures[i]));
-  }
+  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/square2/14.csv"));
+  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/up_down/14.csv"));
+  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/z/14.csv"));
+  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/roll_flip/14.csv"));
+
 }

@@ -25,12 +25,6 @@ typedef struct model{
   double* s;
 } model;
 
-typedef struct gesture{
-  int len;  
-  double** data;
-  int *o;
-} gesture;
-
 model** models;
 
 int _count = 0;
@@ -42,7 +36,6 @@ model* new_model(){
 double* dir_filter_ref;
 double* dir_filter_ref_initial;
 
-int classify_gesture(gesture *g);
 int derive_group(model *m, double *acc);
 void forward_proc_inc(model *m, int o);
 int filter(double* acc);

@@ -69,6 +69,7 @@ int input_end(){
   return recognized;
 }
 
+
 //The quantizer, maps accelerometer readings to a set integers.
 int derive_group(model *m, fp_t *acc){
   fp_t a, b, c, d;
@@ -181,6 +182,19 @@ int classify_csv_file(const char* filename){
 }
 
 
+int ok = 0;
+int total = 0;
+
+void check(const char* file, int expect){
+  int g = classify_csv_file(file);
+  if (g == expect){
+    ok+=1;
+  }else{
+    printf("FAIL -  expected: %d, got: %d\n", expect, g);
+  }
+  total += 1;
+}
+
 int main(){
   init_models();
 
@@ -197,9 +211,12 @@ int main(){
     models[i]->started = false;
   }
 
-  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/square2/14.csv"));
-  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/up_down/14.csv"));
-  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/z/14.csv"));
-  printf("%d\n", classify_csv_file("../we-g/gesture_recordings/roll_flip/14.csv"));
+
+  check("../we-g/gesture_recordings/square2/14.csv", 0);
+  check("../we-g/gesture_recordings/up_down/14.csv", 1);
+  check("../we-g/gesture_recordings/z/14.csv", 2);
+  check("../we-g/gesture_recordings/roll_flip/14.csv", 3);
+
+  printf("recognition rate: %d/%d, %f%%\n", ok, total, ((float)ok/(float)total)*100);
 
 }

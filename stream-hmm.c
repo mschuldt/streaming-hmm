@@ -213,10 +213,30 @@ int main(){
     models[i]->started = false;
   }
 
+  check("../we-g/gesture_recordings/square2/1.csv", 0);
+  check("../we-g/gesture_recordings/square2/5.csv", 0);
+  check("../we-g/gesture_recordings/square2/10.csv", 0);
   check("../we-g/gesture_recordings/square2/14.csv", 0);
+  check("../we-g/gesture_recordings/square2/15.csv", 0);
+  check("../we-g/gesture_recordings/square2/16.csv", 0);
+
+  check("../we-g/gesture_recordings/up_down/1.csv", 1);
+  check("../we-g/gesture_recordings/up_down/5.csv", 1);
+  check("../we-g/gesture_recordings/up_down/10.csv", 1);
   check("../we-g/gesture_recordings/up_down/14.csv", 1);
+  check("../we-g/gesture_recordings/up_down/15.csv", 1);
+
+  check("../we-g/gesture_recordings/z/1.csv", 2);
+  check("../we-g/gesture_recordings/z/5.csv", 2);
+  check("../we-g/gesture_recordings/z/10.csv", 2);
   check("../we-g/gesture_recordings/z/14.csv", 2);
+
+  check("../we-g/gesture_recordings/roll_flip/1.csv", 3);
+  check("../we-g/gesture_recordings/roll_flip/5.csv", 3);
+  check("../we-g/gesture_recordings/roll_flip/10.csv", 3);
   check("../we-g/gesture_recordings/roll_flip/14.csv", 3);
+  check("../we-g/gesture_recordings/roll_flip/15.csv", 3);
+  check("../we-g/gesture_recordings/roll_flip/16.csv", 3);
 
   printf("recognition rate: %d/%d, %f%%\n", ok, total, ((float)ok/(float)total)*100);
 }

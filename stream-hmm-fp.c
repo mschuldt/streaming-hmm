@@ -32,21 +32,22 @@ int input_end(){
     m->started = false;
     s = m->s;
     // add probabilities
-    for (int j = 0; j < m->numStates; j++) {
-      prob =fp_add(prob, s[j]);
+    for (int j = 0; j < m->numStates; j++){
+      prob = fp_add(prob, s[j]);
     }
     m->prob = prob;
     sum = fp_add(sum, fp_mul(m->defaultProbability, prob));
   }
-  //printf("sum = %.*e,\n", fp2d(sum));
+  //printf("m->prob = %.*e,\n", m->prob);
   for (int i=0; i < n_models; i++) {
     m = models[i];
     fp_t tmpgesture = m->prob;
     fp_t tmpmodel = m->defaultProbability;
-    if (fp_cmp(fp_div(fp_mul(tmpmodel, tmpgesture), sum), recogprob)==1) {
+    //    if (fp_cmp(fp_div(fp_mul(tmpmodel, tmpgesture), sum), recogprob)==1) {
+    if (fp_cmp(tmpgesture, recogprob)==1) {
       probgesture = tmpgesture;
       probmodel = tmpmodel;
-      recogprob = fp_div(fp_mul(tmpmodel,tmpgesture), sum);
+      recogprob = tmpgesture;//fp_div(fp_mul(tmpmodel,tmpgesture), sum);
       recognized = i;
     }
   }
@@ -57,7 +58,7 @@ int input_end(){
 //The quantizer, maps accelerometer readings to a set integers.
 int derive_group(model *m, fp_t *acc){
   fp_t a, b, c, d;
-  fp_t minDist = 0x3ffff;
+  fp_t minDist = d2fp(0x3ffff);
   int minGroup=0;
   fp_t *ref;
   for (int i = 0; i < m->numObservations; i++){
@@ -114,15 +115,15 @@ int filter(fp_t* acc){
                                    fp_mul(acc[2], acc[2])))));
   ////////////////////////////////////////////////////////////////////////////////
   //idle state filter
-  fp_t idle_sensitivity = d2fp(0.1);
-  if (!(fp_cmp(abs, fp_add(1, idle_sensitivity))==1 ||
-        fp_cmp(abs, fp_add(1, idle_sensitivity))==-1)) {
+  fp_t idle_sensitivity = d2fp(0.3);//d2fp(0.1);
+  if (!(fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1 ||
+        fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1)) {
     return false;
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
-  fp_t def_sensitivity = d2fp(0.4);
+  fp_t def_sensitivity = d2fp(0.5);//d2fp(0.4);
   if (fp_cmp(acc[0], fp_sub(dir_filter_ref[0], def_sensitivity))==-1 ||
       fp_cmp(acc[0], fp_add(dir_filter_ref[0], def_sensitivity))== 1 ||
       fp_cmp(acc[1], fp_sub(dir_filter_ref[1], def_sensitivity))==-1 ||
@@ -145,12 +146,7 @@ fp_t* read_line(char* line){
     tok = strtok(NULL, ",\n");
     acc_reading[i] = d2fp(strtod(tok, NULL));
   }
-  /*
-    for (int i = 0; i < 3; i++){
-    printf("%llu ", acc_reading[i]);
-    }
-    printf("\n");
-  */
+
   return acc_reading;
 }
 

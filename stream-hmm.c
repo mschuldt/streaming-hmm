@@ -38,15 +38,16 @@ int input_end(){
     m->prob = prob;
     sum += (m->defaultProbability)*prob;
   }
-  //printf("sum = %.*e,\n", sum);
+  //printf("m->prob = %.*e,\n", m->prob);
   for (int i=0; i < n_models; i++) {
     m = models[i];
     double tmpgesture = m->prob;
     double tmpmodel = m->defaultProbability;
-    if (((tmpmodel * tmpgesture) / sum) > recogprob) {
+    //    if (((tmpmodel * tmpgesture) / sum) > recogprob) {
+    if (tmpgesture > recogprob) {
       probgesture = tmpgesture;
-      probmodel = tmpmodel;
-      recogprob = (tmpmodel*tmpgesture)/sum;
+      /////probmodel = tmpmodel;
+      recogprob = tmpgesture;//(tmpmodel*tmpgesture)/sum;
       recognized = i;
     }
   }
@@ -96,6 +97,7 @@ void forward_proc_inc(model *m, int o){
         sum += s[l] * a[l][k];
       }
       f[k] = sum * b[k][o];
+      //printf("[%f] ", f[k]);
     }
     m->f = s;
     m->s = f;
@@ -112,7 +114,7 @@ int filter(double* acc){
 
   ////////////////////////////////////////////////////////////////////////////////
   //idle state filter
-  double idle_sensitivity = 0.1;
+  double idle_sensitivity = 0.1;//0.3;
   if (!(abs > 1 + idle_sensitivity ||
         abs < 1 - idle_sensitivity)) {
     return false;
@@ -120,7 +122,7 @@ int filter(double* acc){
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
-  double def_sensitivity = 0.4;
+  double def_sensitivity = 0.4;//0.5;
   if (acc[0] < dir_filter_ref[0] - def_sensitivity ||
       acc[0] > dir_filter_ref[0] + def_sensitivity ||
       acc[1] < dir_filter_ref[1] - def_sensitivity ||

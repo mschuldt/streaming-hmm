@@ -1,9 +1,9 @@
 #ifndef FP_H
 #define FP_H
 
-#define FP_BITS 64ull             /* Total bits per fixed-point number. */
-#define FP_P 32ull                /* Number of integer bits. */
-#define FP_Q 32ull                /* Number of fractional bits. */
+#define FP_BITS 32ull             /* Total bits per fixed-point number. */
+#define FP_P 2ull                /* Number of integer bits. */
+#define FP_Q 30ull                /* Number of fractional bits. */
 #define FP_F (1ull << FP_Q)      /* pow(2, FP_Q). */
 
 #define FP_MIN_INT (-FP_MAX_INT)      /* Smallest representable integer. */

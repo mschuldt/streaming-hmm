@@ -7,10 +7,24 @@
 
 //Called with each accelerometer reading
 void input_reading(double *acc){
+  double max = 0, tmp;
   if (filter(acc)){
     for (int i = 0; i < n_models; i++){
-      forward_proc_inc(models[i], derive_group(models[i], acc));
+      tmp = forward_proc_inc(models[i], derive_group(models[i], acc));
+      if (tmp > max){
+        max = tmp;
+      }
     }
+    model *m;
+    if (max < 0.01){
+      for (int i = 0; i < n_models; i++){
+        m = models[i];
+        for (int l = 0; l < m->numStates; l++){
+          m->s[l] = m->s[l]*10;
+        }
+      }
+    }
+//    printf("max = %f\n", max);
   }
 }
 
@@ -38,7 +52,7 @@ int input_end(){
     m->prob = prob;
     sum += (m->defaultProbability)*prob;
   }
-  //printf("m->prob = %.*e,\n", m->prob);
+  printf("m->prob = %.*e,\n", m->prob);
   for (int i=0; i < n_models; i++) {
     m = models[i];
     double tmpgesture = m->prob;
@@ -76,13 +90,14 @@ int derive_group(model *m, double *acc){
 }
 
 //Performs the next iteration of the HMM forward algorithm
-void forward_proc_inc(model *m, int o){
+double forward_proc_inc(model *m, int o){
   double *pi = m->PI;
   double **a = m->A;
   double **b = m->B;
   double *f = m->f;
   double *s = m->s;
   int numStates = m->numStates;
+  double max = 0;
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
@@ -97,11 +112,15 @@ void forward_proc_inc(model *m, int o){
         sum += s[l] * a[l][k];
       }
       f[k] = sum * b[k][o];
+      if (f[k] > max){
+        max = f[k];
+      }
       //printf("[%f] ", f[k]);
     }
     m->f = s;
     m->s = f;
   }
+  return max;
 }
 
 //apply various filters to accelerometer reading ACC

@@ -39,7 +39,7 @@ fp_t* dir_filter_ref;
 fp_t* dir_filter_ref_initial;
 
 int derive_group(model *m, fp_t *acc);
-void forward_proc_inc(model *m, int o);
+fp_t forward_proc_inc(model *m, int o);
 int filter(fp_t* acc);
 
 #endif

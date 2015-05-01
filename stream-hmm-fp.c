@@ -7,10 +7,23 @@
 
 //Called with each accelerometer reading
 void input_reading(fp_t *acc){
+  fp_t max = 0, tmp;
   if (filter(acc)){
     for (int i = 0; i < n_models; i++){
-      forward_proc_inc(models[i], derive_group(models[i], acc));
+      tmp = forward_proc_inc(models[i], derive_group(models[i], acc));
+      if (tmp > max){
+        max = tmp;
+      }
     }
+    if (fp_cmp(max, d2fp(0.01))==-1){
+      for (int i = 0; i < n_models; i++){
+        m = models[i];
+        for (int l = 0; l < m->numStates; l++){
+          m->s[l] = fp_mul(m->s[l], d2fp(10));
+        }
+      }
+    }
+    //    printf("max = %f\n", fp2d(max));
   }
 }
 
@@ -38,7 +51,8 @@ int input_end(){
     m->prob = prob;
     sum = fp_add(sum, fp_mul(m->defaultProbability, prob));
   }
-  //printf("m->prob = %.*e,\n", m->prob);
+  //  printf("m->prob = %.*e,\n", m->prob);
+  printf("m->prob = %f\n", fp2d(m->prob));
   for (int i=0; i < n_models; i++) {
     m = models[i];
     fp_t tmpgesture = m->prob;
@@ -77,13 +91,14 @@ int derive_group(model *m, fp_t *acc){
 }
 
 //Performs the next iteration of the HMM forward algorithm
-void forward_proc_inc(model *m, int o){
+double forward_proc_inc(model *m, int o){
   fp_t *pi = m->PI;
   fp_t **a = m->A;
   fp_t **b = m->B;
   fp_t *f = m->f;
   fp_t *s = m->s;
   int numStates = m->numStates;
+  double max = 0;
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
@@ -98,10 +113,14 @@ void forward_proc_inc(model *m, int o){
         sum = fp_add(sum, fp_mul(s[l], a[l][k]));
       }
       f[k] = fp_mul(sum, b[k][o]);
+      if (f[k] > max){
+        max = f[k];
+      }
     }
     m->f = s;
     m->s = f;
   }
+  return max;
 }
 
 //apply various filters to accelerometer reading ACC
@@ -115,7 +134,7 @@ int filter(fp_t* acc){
                                    fp_mul(acc[2], acc[2])))));
   ////////////////////////////////////////////////////////////////////////////////
   //idle state filter
-  fp_t idle_sensitivity = d2fp(0.3);//d2fp(0.1);
+  fp_t idle_sensitivity = d2fp(0.1);//d2fp(0.3);
   if (!(fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1 ||
         fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1)) {
     return false;
@@ -123,7 +142,7 @@ int filter(fp_t* acc){
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
-  fp_t def_sensitivity = d2fp(0.5);//d2fp(0.4);
+  fp_t def_sensitivity = d2fp(0.4);//d2fp(0.5);
   if (fp_cmp(acc[0], fp_sub(dir_filter_ref[0], def_sensitivity))==-1 ||
       fp_cmp(acc[0], fp_add(dir_filter_ref[0], def_sensitivity))== 1 ||
       fp_cmp(acc[1], fp_sub(dir_filter_ref[1], def_sensitivity))==-1 ||

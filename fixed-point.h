@@ -1,62 +1,55 @@
 #ifndef FP_H
 #define FP_H
 
-#define FP_BITS 32ull             /* Total bits per fixed-point number. */
-#define FP_P 2ull                /* Number of integer bits. */
-#define FP_Q 30ull                /* Number of fractional bits. */
-#define FP_F (1ull << FP_Q)      /* pow(2, FP_Q). */
+#define FP_BITS 18ull       // Total bits per fixed-point number.
+#define FP_P 2ull           // integer bits.
+#define FP_Q 16ull          // fractional bits.
 
-#define FP_MIN_INT (-FP_MAX_INT)      /* Smallest representable integer. */
-#define FP_MAX_INT ((1ull << FP_P) - 1ull)  /* Largest representable integer. */
+#define FP_F (1ull << FP_Q)  // pow(2, FP_Q).
 
+typedef long long fp_t;
 
-typedef /*unsigned*/ long long fp_t;
-
-//double => fixed point
 inline fp_t
-d2fp(double n){
-  return n*FP_F;
-}
+d2fp(double n){ return n*FP_F; }
 
-//fixed point => double
 inline double
-fp2d(fp_t n){
-  return (double)n/FP_F;
-}
+fp2d(fp_t n){ return (double)n/FP_F; }
 
-// Returns X + Y. 
 inline fp_t
-fp_add(fp_t x, fp_t y) 
-{
-  return x + y;
-}
+fp_add(fp_t x, fp_t y) { return x + y; }
 
-// Returns X - Y. 
 inline fp_t
-fp_sub(fp_t x, fp_t y) 
-{
-  return x - y;
-}
+fp_sub(fp_t x, fp_t y) { return x - y; }
 
-// Returns X * Y. 
 inline fp_t
-fp_mul(fp_t x, fp_t y) 
-{
-  //return d2fp(fp2d(x)*fp2d(y));
+fp_mul(fp_t x, fp_t y){
   fp_t _x = (x >= 0 ? x : -x);
   fp_t _y = (y >= 0 ? y : -y);
-  fp_t xy = (long long) _x * _y / FP_F;
+  fp_t xy = (fp_t) _x * _y / FP_F;
   if ((x >= 0) != (y >= 0)){
     xy = -xy;
   }
   return xy;
 }
 
-// Returns -1 if X < Y, 0 if X == Y, 1 if X > Y. * 
-inline int
-fp_cmp(fp_t x, fp_t y) 
-{
+inline fp_t
+__fp_div(fp_t x, fp_t y){
+  fp_t _x = (x >= 0 ? x : -x);
+  fp_t _y = (y >= 0 ? y : -y);
+  fp_t xy = (fp_t) _x * FP_F / _y;
+  if ((x >= 0) != (y >= 0)){
+    xy = -xy;
+  }
+  return xy;
+}
+
+inline fp_t
+fp_inv(fp_t n){ return __fp_div(d2fp(1.0), n);}
+
+inline int // Return -1,0,1 if <,==,>
+fp_cmp(fp_t x, fp_t y){
   return x < y ? -1 : (x > y ? 1 : 0);
 }
 
-#endif //FP
+#endif
+

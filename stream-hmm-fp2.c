@@ -5,6 +5,8 @@
 #include "models.c"
 #include <string.h>
 
+int last_bit = 1 << FP_BITS-1;
+
 //Called with each accelerometer reading
 void input_reading(fp_t *acc){
   fp_t ord = 0, tmp;
@@ -12,14 +14,16 @@ void input_reading(fp_t *acc){
     for (int i = 0; i < n_models; i++){
       ord |= forward_proc_inc(models[i], derive_group(models[i], acc));
     }
-    int n = 0;
-    int mask = 1 << FP_BITS-1;
+
+    //counts the number of bits we can shift left by - the leading zeros
     // : count 0
     // : count1 over if 2* over 1 . + count1 ; then drop ;
-    while (ord && !(ord & mask)){
+    int n = 0;
+    while (ord && !(ord & last_bit)){
       n += 1;
       ord = ord << 1;
     }
+
     if (n>3){
       n-=3;
       for (int i = 0; i < n_models; i++){
@@ -41,8 +45,8 @@ int input_end(){
   fp_t sum = 0;
   int recognized = -1; // which gesture has been recognized
   fp_t recogprob = -1; // probability of this gesture
-  fp_t probgesture = 0; // temporal value for bayes algorithm
-  fp_t probmodel = 0; // temporal value for bayes algorithm
+  fp_t tmpgesture;
+  fp_t tmpmodel;
 
   for (int i = 0; i < n_models; i++){
     prob = d2fp(0.0);
@@ -58,13 +62,10 @@ int input_end(){
   }
   for (int i=0; i < n_models; i++) {
     m = models[i];
-    fp_t tmpgesture = m->prob;
-    fp_t tmpmodel = m->defaultProbability;
-    //    if (fp_cmp(fp_div(fp_mul(tmpmodel, tmpgesture), sum), recogprob)==1) {
+    mpgesture = m->prob;
+    tmpmodel = m->defaultProbability;
     if (fp_cmp(tmpgesture, recogprob)==1) {
-      probgesture = tmpgesture;
-      probmodel = tmpmodel;
-      recogprob = tmpgesture;//fp_div(fp_mul(tmpmodel,tmpgesture), sum);
+      recogprob = tmpgesture;
       recognized = i;
     }
   }
@@ -74,7 +75,7 @@ int input_end(){
 }
 
 
-//The quantizer, maps accelerometer readings to a set integers.
+//The quantizer, maps accelerometer readings to a set of integers.
 int derive_group(model *m, fp_t *acc){
   fp_t a, b, c, d;
   fp_t minDist = d2fp(0x3ffff);
@@ -103,6 +104,8 @@ fp_t forward_proc_inc(model *m, int o){
   fp_t *s = m->s;
   int numStates = m->numStates;
   fp_t ord = 0;
+  fp_t sum;
+  fp_t** tmp;
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
@@ -111,9 +114,8 @@ fp_t forward_proc_inc(model *m, int o){
     m->started = true;
     return 0;
   }else{
-    fp_t** tmp;
     for (int k = 0; k < numStates; k++){
-      fp_t sum = 0;
+      sum = 0;
       for (int l = 0; l < numStates; l++){
         sum = fp_add(sum, fp_mul(s[l], a[l][k]));
       }
@@ -129,15 +131,19 @@ fp_t forward_proc_inc(model *m, int o){
 //apply various filters to accelerometer reading ACC
 // returning true if the ACC passes, else false
 int filter(fp_t* acc){
+  fp_t abs;
+  fp_t idle_sensitivity;
+  fp_t def_sensitivity;
+
   if (!acc){
     return false;
   }
-  fp_t abs = d2fp(sqrt(fp2d(fp_add(fp_add(fp_mul(acc[0], acc[0]),
-                                          fp_mul(acc[1], acc[1])),
-                                   fp_mul(acc[2], acc[2])))));
+  abs = d2fp(sqrt(fp2d(fp_add(fp_add(fp_mul(acc[0], acc[0]),
+                                     fp_mul(acc[1], acc[1])),
+                              fp_mul(acc[2], acc[2])))));
   ////////////////////////////////////////////////////////////////////////////////
   //idle state filter
-  fp_t idle_sensitivity = d2fp(0.1);//d2fp(0.3);
+  idle_sensitivity = d2fp(0.1);//d2fp(0.3);
   if (!(fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1 ||
         fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1)) {
     return false;
@@ -145,7 +151,7 @@ int filter(fp_t* acc){
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
-  fp_t def_sensitivity = d2fp(0.4);//d2fp(0.5);
+  def_sensitivity = d2fp(0.4);//d2fp(0.5);
   if (fp_cmp(acc[0], fp_sub(dir_filter_ref[0], def_sensitivity))==-1 ||
       fp_cmp(acc[0], fp_add(dir_filter_ref[0], def_sensitivity))== 1 ||
       fp_cmp(acc[1], fp_sub(dir_filter_ref[1], def_sensitivity))==-1 ||

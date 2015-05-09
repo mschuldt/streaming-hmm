@@ -7,24 +7,20 @@
 
 //Called with each accelerometer reading
 void input_reading(double *acc){
-  double max = 0, tmp;
+  double sum = 0, tmp;
+  model *m;
   if (filter(acc)){
     for (int i = 0; i < n_models; i++){
-      tmp = forward_proc_inc(models[i], derive_group(models[i], acc));
-      if (tmp > max){
-        max = tmp;
-      }
+      sum += forward_proc_inc(models[i], derive_group(models[i], acc));
     }
-    model *m;
-    if (max < 0.01){
+    if (sum){
       for (int i = 0; i < n_models; i++){
         m = models[i];
         for (int l = 0; l < m->numStates; l++){
-          m->s[l] = m->s[l]*10;
+          m->s[l] = m->s[l]/sum;
         }
       }
     }
-//    printf("max = %f\n", max);
   }
 }
 
@@ -52,7 +48,7 @@ int input_end(){
     m->prob = prob;
     sum += (m->defaultProbability)*prob;
   }
-  printf("m->prob = %.*e,\n", m->prob);
+  printf("m->prob = %.30f\n", m->prob);
   for (int i=0; i < n_models; i++) {
     m = models[i];
     double tmpgesture = m->prob;
@@ -75,17 +71,24 @@ int derive_group(model *m, double *acc){
   double minDist = 0x3ffff;
   int minGroup=0;
   double *ref;
+  double max=0;
   for (int i = 0; i < m->numObservations; i++){
     ref = m->quantizerMap[i];
     a = ref[0] - acc[0];
     b = ref[1] - acc[1];
     c = ref[2] - acc[2];
-    d = sqrt(a*a + b*b + c*c);
+    d = a*a + b*b + c*c;
+    if (d > max){
+      max = d;
+      //printf("max = %f\n", max);
+    }
     if (d < minDist){
       minDist = d;
       minGroup = i;
+
     }
   }
+  //printf("\n");
   return minGroup;
 }
 
@@ -97,13 +100,14 @@ double forward_proc_inc(model *m, int o){
   double *f = m->f;
   double *s = m->s;
   int numStates = m->numStates;
-  double max = 0;
+  double total = 0;
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
       s[l] = pi[l] * b[l][o];
     }
     m->started = true;
+    return 0;
   }else{
     double** tmp;
     for (int k = 0; k < numStates; k++){
@@ -112,15 +116,12 @@ double forward_proc_inc(model *m, int o){
         sum += s[l] * a[l][k];
       }
       f[k] = sum * b[k][o];
-      if (f[k] > max){
-        max = f[k];
-      }
-      //printf("[%f] ", f[k]);
+      total += f[k];
     }
     m->f = s;
     m->s = f;
   }
-  return max;
+  return total;
 }
 
 //apply various filters to accelerometer reading ACC

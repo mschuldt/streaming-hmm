@@ -23,7 +23,6 @@ void input_reading(fp_t *acc){
       n += 1;
       ord = ord << 1;
     }
-
     if (n>3){
       n-=3;
       for (int i = 0; i < n_models; i++){
@@ -62,7 +61,7 @@ int input_end(){
   }
   for (int i=0; i < n_models; i++) {
     m = models[i];
-    mpgesture = m->prob;
+    tmpgesture = m->prob;
     tmpmodel = m->defaultProbability;
     if (fp_cmp(tmpgesture, recogprob)==1) {
       recogprob = tmpgesture;

@@ -56,15 +56,8 @@ int input_end(){
     for (int j = 0; j < m->numStates; j++){
       prob = fp_add(prob, s[j]);
     }
-    m->prob = prob;
-    sum = fp_add(sum, fp_mul(m->defaultProbability, prob));
-  }
-  for (int i=0; i < n_models; i++) {
-    m = models[i];
-    tmpgesture = m->prob;
-    tmpmodel = m->defaultProbability;
-    if (fp_cmp(tmpgesture, recogprob)==1) {
-      recogprob = tmpgesture;
+    if (fp_cmp(prob, recogprob)==1) {
+      recogprob = prob;
       recognized = i;
     }
   }

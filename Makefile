@@ -12,4 +12,4 @@ test: test.c
 	g++ -std=c++11 test.c -o test
 
 clean:
-	rm -f hmm test fp
+	rm -f hmm test fp fp2

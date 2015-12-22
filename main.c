@@ -56,7 +56,8 @@ int main(){
     models[i]->started = false;
   }
 
-
+  check("test.csv", 0);
+  exit(1);
   check("../we-g/gesture_recordings/square2/1.csv", 0);
   check("../we-g/gesture_recordings/square2/5.csv", 0);
   check("../we-g/gesture_recordings/square2/10.csv", 0);

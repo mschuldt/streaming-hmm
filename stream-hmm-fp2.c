@@ -12,7 +12,9 @@ void input_reading(fp_t *acc){
   fp_t ord = 0, tmp;
   if (filter(acc)){
     for (int i = 0; i < n_models; i++){
-      ord |= forward_proc_inc(models[i], derive_group(models[i], acc));
+      int group = derive_group(models[i], acc);
+      printf("group= %d\n", group);
+      ord |= forward_proc_inc(models[i], group);
     }
 
     //counts the number of bits we can shift left by - the leading zeros
@@ -32,6 +34,8 @@ void input_reading(fp_t *acc){
         }
       }
     }
+  }else{
+    printf("99999\n");
   }
 }
 
@@ -41,11 +45,9 @@ int input_end(){
   fp_t prob;
   model *m;
   fp_t* s;
-  fp_t sum = 0;
   int recognized = -1; // which gesture has been recognized
   fp_t recogprob = -1; // probability of this gesture
   fp_t tmpgesture;
-  fp_t tmpmodel;
 
   for (int i = 0; i < n_models; i++){
     prob = d2fp(0.0);
@@ -87,11 +89,14 @@ int derive_group(model *m, fp_t *acc){
   return minGroup;
 }
 
+
+
 //Performs the next iteration of the HMM forward algorithm
 fp_t forward_proc_inc(model *m, int o){
   fp_t *pi = m->PI;
   fp_t **a = m->A;
-  fp_t **b = m->B;
+  //fp_t **b = m->B;
+  fp_t *b = m->B;
   fp_t *f = m->f;
   fp_t *s = m->s;
   int numStates = m->numStates;
@@ -101,7 +106,9 @@ fp_t forward_proc_inc(model *m, int o){
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
-      s[l] = fp_mul(pi[l], b[l][o]);
+      //printf("b[%d] = %d, %f\n", (o<<3) + l, (int)b[(o<<3) + l], fp2d(b[(o<<3) + l]));
+      s[l] = fp_mul(pi[l], b[(o<<3) + l]);
+      printf("s[l]= %d, %f\n", (int)s[l], fp2d(s[l]));
     }
     m->started = true;
     return 0;
@@ -111,7 +118,8 @@ fp_t forward_proc_inc(model *m, int o){
       for (int l = 0; l < numStates; l++){
         sum = fp_add(sum, fp_mul(s[l], a[l][k]));
       }
-      f[k] = fp_mul(sum, b[k][o]);
+      f[k] = fp_mul(sum, b[(o<<3)+k]);
+      printf("f[k]= %d, %f\n", (int)f[k], fp2d(f[k]));
       ord |= f[k];
     }
     m->f = s;
@@ -136,24 +144,44 @@ int filter(fp_t* acc){
   ////////////////////////////////////////////////////////////////////////////////
   //idle state filter
   idle_sensitivity = d2fp(0.1);//d2fp(0.3);
-  if (!(fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1 ||
-        fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1)) {
-    return false;
+  int ret = 0;
+
+  if (fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1){
+    ret = 1;
+  }
+  if (fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1){
+    ret = 1;
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
   def_sensitivity = d2fp(0.4);//d2fp(0.5);
-  if (fp_cmp(acc[0], fp_sub(dir_filter_ref[0], def_sensitivity))==-1 ||
-      fp_cmp(acc[0], fp_add(dir_filter_ref[0], def_sensitivity))== 1 ||
-      fp_cmp(acc[1], fp_sub(dir_filter_ref[1], def_sensitivity))==-1 ||
-      fp_cmp(acc[1], fp_add(dir_filter_ref[1], def_sensitivity))== 1 ||
-      fp_cmp(acc[2], fp_sub(dir_filter_ref[2], def_sensitivity))==-1 ||
-      fp_cmp(acc[2], fp_add(dir_filter_ref[2], def_sensitivity))==1) {
+
+  if (ret){
+    ret = 0;
+    if (fp_cmp(acc[0], fp_sub(dir_filter_ref[0], def_sensitivity))==-1){
+      ret = 1;
+    }else{
+      if (fp_cmp(acc[0], fp_add(dir_filter_ref[0], def_sensitivity))== 1){
+        ret = 1;
+      }else{
+        if (fp_cmp(acc[1], fp_sub(dir_filter_ref[1], def_sensitivity))==-1){
+          ret = 1;
+        }else{
+          if (fp_cmp(acc[1], fp_add(dir_filter_ref[1], def_sensitivity))== 1){
+            ret = 1;
+          }else{
+            if (fp_cmp(acc[2], fp_sub(dir_filter_ref[2], def_sensitivity))==-1){
+              ret = 1;
+            }else{
+              if (fp_cmp(acc[2], fp_add(dir_filter_ref[2], def_sensitivity))==1){
+                ret = 1;
+              }}}}}}}
+
+  if (ret){
     dir_filter_ref = acc;
-    return true;
   }
-  return false;
+  return ret;
 }
 
 #include "main.c"

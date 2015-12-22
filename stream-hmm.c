@@ -142,7 +142,7 @@ int filter(double* acc){
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
-  double def_sensitivity = 0.4;//0.5;
+  double  def_sensitivity = 0.4;//0.5;
   if (acc[0] < dir_filter_ref[0] - def_sensitivity ||
       acc[0] > dir_filter_ref[0] + def_sensitivity ||
       acc[1] < dir_filter_ref[1] - def_sensitivity ||

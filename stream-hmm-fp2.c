@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdio.h>
-#include <float.h>
 #include "hmm-fp.h"
 #include "models.c"
 #include <string.h>
@@ -11,9 +10,10 @@ int last_bit = 1 << FP_BITS-1;
 void input_reading(fp_t *acc){
   fp_t ord = 0, tmp;
   if (filter(acc)){
+    printf("%f, %f, %f\n", fp2d(acc[0]), fp2d(acc[1]), fp2d(acc[2]));
     for (int i = 0; i < n_models; i++){
       int group = derive_group(models[i], acc);
-      printf("group= %d\n", group);
+      //printf("group= %d\n", group);
       ord |= forward_proc_inc(models[i], group);
     }
 
@@ -34,9 +34,9 @@ void input_reading(fp_t *acc){
         }
       }
     }
-  }else{
-    printf("99999\n");
-  }
+  }//else{
+  //  printf("99999\n");
+  //}
 }
 
 //Called at the end of the gesture,
@@ -108,7 +108,7 @@ fp_t forward_proc_inc(model *m, int o){
     for (int l = 0; l < numStates; l++){
       //printf("b[%d] = %d, %f\n", (o<<3) + l, (int)b[(o<<3) + l], fp2d(b[(o<<3) + l]));
       s[l] = fp_mul(pi[l], b[(o<<3) + l]);
-      printf("s[l]= %d, %f\n", (int)s[l], fp2d(s[l]));
+      //printf("s[l]= %d, %f\n", (int)s[l], fp2d(s[l]));
     }
     m->started = true;
     return 0;
@@ -119,12 +119,16 @@ fp_t forward_proc_inc(model *m, int o){
         sum = fp_add(sum, fp_mul(s[l], a[l][k]));
       }
       f[k] = fp_mul(sum, b[(o<<3)+k]);
-      printf("f[k]= %d, %f\n", (int)f[k], fp2d(f[k]));
+      //printf("f[k]= %d, %f\n", (int)f[k], fp2d(f[k]));
       ord |= f[k];
     }
     m->f = s;
     m->s = f;
   }
+  //  printf("\n");
+  //  for (int i = 0; i < 8; i++){
+  //    printf("s[%d]= %d, %f\n", i, (int)s[i], fp2d(s[i]));
+  //  }
   return ord;
 }
 
@@ -138,25 +142,37 @@ int filter(fp_t* acc){
   if (!acc){
     return false;
   }
+
   abs = d2fp(sqrt(fp2d(fp_add(fp_add(fp_mul(acc[0], acc[0]),
                                      fp_mul(acc[1], acc[1])),
                               fp_mul(acc[2], acc[2])))));
+  //==>  0.240234, 0.009277, -0.347168
+  //printf("acc =  (%f, %f, %f)\n", fp2d(acc[0]), fp2d(acc[1]), fp2d(acc[2]));
+  //printf("acc[0]**2 = %f\n", fp2d(fp_mul(acc[0], acc[0])));
+  //printf("acc[1]**2 = %f\n", fp2d(fp_mul(acc[1], acc[1])));
+  //printf("acc[2]**2 = %f\n", fp2d(fp_mul(acc[2], acc[2])));
+  //printf("acc[0]**2 + acc[1]**2 = %f\n", fp_add(fp_mul(acc[0], acc[0]),
+  //                                              fp_mul(acc[1], acc[1])));
+  //
+
+  // printf("abs = %f\n", fp2d(abs));
   ////////////////////////////////////////////////////////////////////////////////
   //idle state filter
   idle_sensitivity = d2fp(0.1);//d2fp(0.3);
   int ret = 0;
 
-  if (fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1){
+  //if (fp_cmp(abs, fp_add(d2fp(1), idle_sensitivity))==1){
+  if (fp_cmp(abs, fp_add(d2fp(0.2), idle_sensitivity))==1){
     ret = 1;
   }
-  if (fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1){
+  //if (fp_cmp(abs, fp_sub(d2fp(1), idle_sensitivity))==-1){
+  if (fp_cmp(abs, fp_sub(d2fp(0.2), idle_sensitivity))==-1){
     ret = 1;
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   // def = directional equivalence filter
-  def_sensitivity = d2fp(0.4);//d2fp(0.5);
-
+  def_sensitivity = d2fp(0.2);//d2fp(0.5);
   if (ret){
     ret = 0;
     if (fp_cmp(acc[0], fp_sub(dir_filter_ref[0], def_sensitivity))==-1){

@@ -18,7 +18,7 @@ typedef struct model{
   double** quantizerMap;
   double* PI;
   double** A;
-  double** B;
+  double* B;
 
   //used by the hmm forward algorithm
   double* f;

@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdio.h>
-#include <float.h>
 #include "hmm-fp.h"
 #include "models.c"
 #include <string.h>
@@ -91,7 +90,7 @@ int derive_group(model *m, fp_t *acc){
 fp_t forward_proc_inc(model *m, int o){
   fp_t *pi = m->PI;
   fp_t **a = m->A;
-  fp_t **b = m->B;
+  fp_t *b = m->B;
   fp_t *f = m->f;
   fp_t *s = m->s;
   int numStates = m->numStates;
@@ -99,7 +98,7 @@ fp_t forward_proc_inc(model *m, int o){
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
-      s[l] = fp_mul(pi[l], b[l][o]);
+      s[l] = pi[l] * b[(o<<3) + l];//b[l][o];
     }
     m->started = true;
     return 0;
@@ -110,7 +109,7 @@ fp_t forward_proc_inc(model *m, int o){
       for (int l = 0; l < numStates; l++){
         sum = fp_add(sum, fp_mul(s[l], a[l][k]));
       }
-      f[k] = fp_mul(sum, b[k][o]);
+      f[k] = sum * b[(o<<3)+k];//b[k][o];
       total = fp_add(total, f[k]);
     }
     m->f = s;

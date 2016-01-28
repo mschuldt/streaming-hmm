@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdio.h>
-#include <float.h>
 #include "hmm.h"
 #include "models.c"
 #include <string.h>
@@ -96,7 +95,7 @@ int derive_group(model *m, double *acc){
 double forward_proc_inc(model *m, int o){
   double *pi = m->PI;
   double **a = m->A;
-  double **b = m->B;
+  double *b = m->B;
   double *f = m->f;
   double *s = m->s;
   int numStates = m->numStates;
@@ -104,7 +103,7 @@ double forward_proc_inc(model *m, int o){
 
   if (m->started == false){
     for (int l = 0; l < numStates; l++){
-      s[l] = pi[l] * b[l][o];
+      s[l] = pi[l] * b[(o<<3) + l];//b[l][o];
     }
     m->started = true;
     return 0;
@@ -115,7 +114,7 @@ double forward_proc_inc(model *m, int o){
       for (int l = 0; l < numStates; l++){
         sum += s[l] * a[l][k];
       }
-      f[k] = sum * b[k][o];
+      f[k] = sum * b[(o<<3)+k];//b[k][o];
       total += f[k];
     }
     m->f = s;

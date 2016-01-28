@@ -1,0 +1,16 @@
+
+make {hmm, fp, fp2}
+./{hmm, fp, fp2}
+
+hmm: Nothing special, uses floats
+fp: A version that uses fixed point numbers
+fp2: Various improvements. writen in a style that is easy to port to Chlorophyll.
+     This is the only version that has up to date filter constants.
+
+main.c is common to all versons
+
+models.c is a symbolic link to a generated file containing model data.
+
+
+
+
